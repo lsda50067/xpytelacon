@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void initLruCache() {
         int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
-        // use  int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 512); 相片會被快取住 （？？）
+        // use  int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 512); change 512 photo always cache ?（????）
         Log.d(TAG ," == maxMemory == " + maxMemory);
         int cacheSize = maxMemory / 2;
         Log.d(TAG ," == cacheSize == " + cacheSize);
