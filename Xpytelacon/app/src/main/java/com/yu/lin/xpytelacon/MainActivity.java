@@ -28,6 +28,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.support.design.widget.NavigationView;
 
+import com.yu.lin.xpytelacon.adapter.CustomAdapter;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -44,9 +46,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final String TAG = MainActivity.class.getName();
     private ListView mListView;
     private CustomAdapter mCustomAdapter;
-    private LruCache<String, Bitmap> mLruCache;
-    private HandlerThread mHandlerThread;
-    private Handler mHandler;
+//    private LruCache<String, Bitmap> mLruCache;
+//    private HandlerThread mHandlerThread;
+//    private Handler mHandler;
     private Toolbar toolbar;
     private FloatingActionButton floatingActionButton;
     private ActionBarDrawerToggle toggle;
@@ -61,10 +63,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initView();
         // reSet ToolBar
         reSetToolBar();
-        // init LruCache
-        initLruCache();
-        // create Handle;
-        initHandle();
         // init Toggle
         initToggle();
     }
@@ -79,7 +77,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onStart() {
         super.onStart();
-
     }
 
     @Override
@@ -100,27 +97,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void reSetToolBar(){
         setSupportActionBar(toolbar);
-    }
-
-    private void initHandle() {
-        mHandlerThread = new HandlerThread("LRU Cache Handler");
-        mHandlerThread.start();
-        mHandler = new Handler(mHandlerThread.getLooper());
-    }
-
-    private void initLruCache() {
-        int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
-        // use  int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 512); change 512 photo always cache ?（????）
-        Log.d(TAG ," == maxMemory == " + maxMemory);
-        int cacheSize = maxMemory / 2;
-        Log.d(TAG ," == cacheSize == " + cacheSize);
-        // setLruCache
-        mLruCache = new LruCache<String, Bitmap>(cacheSize){
-            @Override
-            protected int sizeOf(String key, Bitmap value) {
-                return value.getByteCount() / 1024;
-            }
-        };
     }
 
     private void initToggle(){
@@ -188,145 +164,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // OnClick then close drawer
         drawer.closeDrawer(GravityCompat.START);
         return true;
-    }
-
-
-
-    public class CustomAdapter extends BaseAdapter {
-
-        private Map<String, Integer> mLoadingImageMap;
-        private Map<String, String> mLoadingDataMap;
-
-        private String[] mDate;
-        private Integer[] mImage;
-        private Context mContext;
-
-        private CustomAdapter(Context context, Integer[] image, String[] date){
-            mLoadingImageMap = new HashMap<String, Integer>();
-            mLoadingDataMap = new HashMap<String, String>();
-            this.mContext = context;
-            this.mImage = image;
-            this.mDate = date;
-        }
-
-
-        private class ViewHolder{
-            ImageView imageView;
-            TextView textView;
-        }
-
-        @Override
-        public int getCount() {
-            // return image count
-            return mImage.length;
-        }
-
-        @Override
-        public Object getItem(int position) {
-            return null;
-        }
-
-        @Override
-        public long getItemId(int position) {
-            return position;
-        }
-
-        @Override
-        public View getView(final int position, View convertView, ViewGroup parent) {
-            View view = convertView;
-            final ViewHolder holder;
-            if  (view == null){
-                holder = new ViewHolder();
-                view = LayoutInflater.from(mContext).inflate(R.layout.list_view_item, null);
-                holder.imageView = (ImageView) view.findViewById(R.id.img);
-                holder.textView = (TextView) view.findViewById(R.id.text_view);
-                view.setTag(holder);
-
-            } else {
-                holder = (ViewHolder) view.getTag();
-            }
-
-            holder.imageView.setImageResource(R.drawable.default_img);
-            holder.imageView.setPadding(5, 5, 5, 5);
-            holder.textView.setText("");
-            holder.textView.setPadding(5, 5, 5, 5);
-
-            final String key = position + "_cache";
-            Bitmap b = mLruCache.get(key);
-            if(b == null && !mLoadingImageMap.containsKey(key) && !mLoadingDataMap.containsKey(key)) {
-                mLoadingImageMap.put(key, mImage[position]);
-                mLoadingDataMap.put(key, mDate[position]);
-                Log.e("TestLru", "load pic" + position);
-                mHandler.post(new Runnable() {
-                    Bitmap bmp;
-                    @Override
-                    public void run() {
-                        bmp = decodeBitmap(mImage[position], 200);
-                        mLruCache.put(key, bmp);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                notifyDataSetChanged();
-                                mLoadingImageMap.remove(key);
-                                mLoadingDataMap.remove(key);
-                            }
-                        });
-                    }
-                });
-            } else{
-                Log.e("TestLru", "cache");
-                holder.imageView.setImageBitmap(b);
-                holder.textView.setText(mDate[position]);
-            }
-
-            return view;
-        }
-    }
-
-    public Bitmap decodeBitmap(Integer url, int maxWidth){
-
-        Bitmap bitmap = null;
-        try{
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inPreferredConfig = Bitmap.Config.RGB_565;
-            options.inSampleSize = calculateInSampleSize(options, maxWidth, maxWidth);
-
-            // getDrawable photo
-            Drawable drawable = getResources().getDrawable(url);
-            BitmapDrawable bitmapDrawable = ((BitmapDrawable) drawable);
-            Bitmap b = bitmapDrawable.getBitmap();
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            b.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-            //use the compression format of your need
-            InputStream is = new ByteArrayInputStream(stream.toByteArray());
-
-            bitmap = BitmapFactory.decodeStream(is, null, options);
-        } catch(Exception e){
-            e.printStackTrace();
-        }
-        return bitmap;
-    }
-
-    public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
-        // Raw height and width of image
-        final int height = options.outHeight;
-        final int width = options.outWidth;
-        int inSampleSize = 1;
-
-        if (height > reqHeight || width > reqWidth) {
-
-            final int halfHeight = height / 2;
-            final int halfWidth = width / 2;
-
-            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
-            // height and width larger than the requested height and width.
-            while ((halfHeight / inSampleSize) > reqHeight
-                    && (halfWidth / inSampleSize) > reqWidth) {
-                inSampleSize *= 2;
-            }
-        }
-
-        return inSampleSize;
     }
 
     // image source form https://newevolutiondesigns.com/50-fresh-hd-wallpapers // no use business
