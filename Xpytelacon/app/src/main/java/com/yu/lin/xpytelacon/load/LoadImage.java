@@ -1,5 +1,6 @@
 package com.yu.lin.xpytelacon.load;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -22,16 +23,20 @@ import java.lang.ref.WeakReference;
 
 public class LoadImage extends AsyncTask<Integer, Void, Bitmap> {
 
-    private ImageView mImv;
-    private String mPath;
+//    private ImageView mImv;
+//    private String mPath;
+
+    @SuppressLint("StaticFieldLeak")
     private Context mContext;
-    private Integer[] mImage;
-    private String[] mData;
-    private int mPosition;
+
+//    private Integer[] mImage;
+//    private String[] mData;
+//    private int mPosition;
 
     private final WeakReference<ImageView> imageViewReference;
 
-    public LoadImage(ImageView imageView) {
+    public LoadImage(ImageView imageView, Context context) {
+        this.mContext = context;
         imageViewReference = new WeakReference<ImageView>(imageView);
     }
 

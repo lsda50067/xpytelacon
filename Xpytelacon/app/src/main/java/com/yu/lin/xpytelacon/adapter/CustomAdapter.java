@@ -83,6 +83,9 @@ public class CustomAdapter extends BaseAdapter {
     public View getView(final int position, View convertView, ViewGroup parent) {
         View view = convertView;
         final ViewHolder holder;
+        final String key = position + "_cache";
+        Bitmap b = mLruCache.get(key);
+
         if (view == null) {
             holder = new ViewHolder();
             view = LayoutInflater.from(mContext).inflate(R.layout.list_view_item, null);
@@ -99,8 +102,7 @@ public class CustomAdapter extends BaseAdapter {
         holder.textView.setText("");
         holder.textView.setPadding(5, 5, 5, 5);
 
-        final String key = position + "_cache";
-        Bitmap b = mLruCache.get(key);
+
         if (b == null && !mLoadingImageMap.containsKey(key) && !mLoadingDataMap.containsKey(key)) {
             mLoadingImageMap.put(key, mImage[position]);
             mLoadingDataMap.put(key, mDate[position]);
