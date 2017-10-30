@@ -19,12 +19,14 @@ import android.widget.TextView;
 
 import com.yu.lin.xpytelacon.MainActivity;
 import com.yu.lin.xpytelacon.R;
+import com.yu.lin.xpytelacon.load.LoadImage;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Created by Lin-Yu on 27/10/2017.
@@ -46,6 +48,7 @@ public class CustomAdapter extends BaseAdapter {
     private String[] mDate;
     private Integer[] mImage;
     private Context mContext;
+    private LoadImage mLoadImage;
 
     public CustomAdapter(Context context, Integer[] image, String[] date){
         mLoadingImageMap = new HashMap<String, Integer>();
@@ -83,9 +86,10 @@ public class CustomAdapter extends BaseAdapter {
     public View getView(final int position, View convertView, ViewGroup parent) {
         View view = convertView;
         final ViewHolder holder;
+        // position == >> key
         final String key = position + "_cache";
         Bitmap b = mLruCache.get(key);
-
+//        Bitmap bitmap;
         if (view == null) {
             holder = new ViewHolder();
             view = LayoutInflater.from(mContext).inflate(R.layout.list_view_item, null);
@@ -107,23 +111,33 @@ public class CustomAdapter extends BaseAdapter {
             mLoadingImageMap.put(key, mImage[position]);
             mLoadingDataMap.put(key, mDate[position]);
             Log.e("TestLru", "load pic" + position);
-            mHandler.post(new Runnable() {
-                Bitmap bmp;
+            mLoadImage = new LoadImage(holder.imageView, mContext);
+            mLoadImage.execute(mImage[position]);
 
-                @Override
-                public void run() {
-                    bmp = decodeBitmap(mImage[position], 200);
-                    mLruCache.put(key, bmp);
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            notifyDataSetChanged();
-                            mLoadingImageMap.remove(key);
-                            mLoadingDataMap.remove(key);
-                        }
-                    });
-                }
-            });
+            try {
+                b = mLoadImage.get();
+                mLruCache.put(key, b);
+                Log.d("Test"," == b == ");
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+//            mHandler.post(new Runnable() {
+//                Bitmap bmp;
+//
+//                @Override
+//                public void run() {
+//                    bmp = decodeBitmap(mImage[position], 200);
+//                    mLruCache.put(key, bmp);
+//                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            notifyDataSetChanged();
+//                            mLoadingImageMap.remove(key);
+//                            mLoadingDataMap.remove(key);
+//                        }
+//                    });
+//                }
+//            });
         } else {
             Log.e("TestLru", "cache");
             holder.imageView.setImageBitmap(b);

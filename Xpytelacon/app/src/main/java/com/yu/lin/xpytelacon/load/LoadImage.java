@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
+import android.util.Log;
 import android.widget.ImageView;
 
 import com.yu.lin.xpytelacon.R;
@@ -42,12 +43,8 @@ public class LoadImage extends AsyncTask<Integer, Void, Bitmap> {
 
     @Override
     protected Bitmap doInBackground(Integer... integer) {
-        try {
-            return decodeBitmap(integer[0], 200);
-        } catch (Exception e) {
-            // log error
-        }
-        return null;
+        Log.d("TEST"," == doInBackground == ");
+        return decodeBitmap(integer[0], 200);
     }
 
     @Override
