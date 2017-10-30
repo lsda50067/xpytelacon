@@ -20,6 +20,7 @@ import android.widget.TextView;
 import com.yu.lin.xpytelacon.MainActivity;
 import com.yu.lin.xpytelacon.R;
 import com.yu.lin.xpytelacon.load.LoadImage;
+import com.yu.lin.xpytelacon.load.TaskExcutor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -33,7 +34,7 @@ import java.util.concurrent.ExecutionException;
  *
  */
 
-public class CustomAdapter extends BaseAdapter {
+public class CustomAdapter extends BaseAdapter implements LoadImage.OnLoadImageListener{
 
     private static final String TAG = CustomAdapter.class.getName();
     private int maxMemory;
@@ -77,6 +78,17 @@ public class CustomAdapter extends BaseAdapter {
         return position;
     }
 
+    @Override
+    public void onLoadImageSuccess(String key,Bitmap bitmap) {
+        mLruCache.put(key, bitmap);
+        notifyDataSetChanged();
+    }
+
+    @Override
+    public void onLoadImageError() {
+
+    }
+
     private class ViewHolder{
         ImageView imageView;
         TextView textView;
@@ -86,15 +98,14 @@ public class CustomAdapter extends BaseAdapter {
     public View getView(final int position, View convertView, ViewGroup parent) {
         View view = convertView;
         final ViewHolder holder;
-        // position == >> key
-        final String key = position + "_cache";
-        Bitmap b = mLruCache.get(key);
 //        Bitmap bitmap;
         if (view == null) {
             holder = new ViewHolder();
             view = LayoutInflater.from(mContext).inflate(R.layout.list_view_item, null);
             holder.imageView = (ImageView) view.findViewById(R.id.img);
             holder.textView = (TextView) view.findViewById(R.id.text_view);
+            holder.imageView.setPadding(5, 5, 5, 5);
+            holder.textView.setPadding(5, 5, 5, 5);
             view.setTag(holder);
 
         } else {
@@ -102,25 +113,20 @@ public class CustomAdapter extends BaseAdapter {
         }
 
         holder.imageView.setImageResource(R.drawable.default_img);
-        holder.imageView.setPadding(5, 5, 5, 5);
         holder.textView.setText("");
-        holder.textView.setPadding(5, 5, 5, 5);
 
+        final String key = position + "_cache";
+        Bitmap b = mLruCache.get(key);
+        holder.imageView.setTag(key);
 
-        if (b == null && !mLoadingImageMap.containsKey(key) && !mLoadingDataMap.containsKey(key)) {
-            mLoadingImageMap.put(key, mImage[position]);
-            mLoadingDataMap.put(key, mDate[position]);
+        if (b == null) {
+            Log.d("CustomAdapter","Image not in cache");
             Log.e("TestLru", "load pic" + position);
-            mLoadImage = new LoadImage(holder.imageView, mContext);
-            mLoadImage.execute(mImage[position]);
+            LoadImage task = new LoadImage(mContext, this, key);
+            //mLoadImage.execute(mImage[position]);
 
-            try {
-                b = mLoadImage.get();
-                mLruCache.put(key, b);
-                Log.d("Test"," == b == ");
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
+            task.executeOnExecutor(TaskExcutor.getInstance().getExcutor(),mImage[position]);
+
 //            mHandler.post(new Runnable() {
 //                Bitmap bmp;
 //
@@ -139,6 +145,8 @@ public class CustomAdapter extends BaseAdapter {
 //                }
 //            });
         } else {
+            Log.d("CustomAdapter","Image in cache");
+
             Log.e("TestLru", "cache");
             holder.imageView.setImageBitmap(b);
             holder.textView.setText(mDate[position]);

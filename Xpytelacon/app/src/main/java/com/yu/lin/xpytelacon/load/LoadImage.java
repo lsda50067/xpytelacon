@@ -8,6 +8,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.util.LruCache;
 import android.widget.ImageView;
 
 import com.yu.lin.xpytelacon.R;
@@ -34,11 +35,18 @@ public class LoadImage extends AsyncTask<Integer, Void, Bitmap> {
 //    private String[] mData;
 //    private int mPosition;
 
-    private final WeakReference<ImageView> imageViewReference;
+    private OnLoadImageListener mListener = null;
+    private String mKey = null;
 
-    public LoadImage(ImageView imageView, Context context) {
+    public interface OnLoadImageListener {
+        public void onLoadImageSuccess(String key,Bitmap bitmap);
+        public void onLoadImageError();
+    }
+
+    public LoadImage( Context context,OnLoadImageListener listener,String key) {
         this.mContext = context;
-        imageViewReference = new WeakReference<ImageView>(imageView);
+        mListener = listener;
+        mKey = key;
     }
 
     @Override
@@ -49,24 +57,18 @@ public class LoadImage extends AsyncTask<Integer, Void, Bitmap> {
 
     @Override
     protected void onPostExecute(Bitmap bitmap) {
-        if (isCancelled()) {
-            bitmap = null;
-        }
-        if (imageViewReference != null) {
-            ImageView imageView = imageViewReference.get();
-            if (imageView != null) {
-                if (bitmap != null) {
-                    imageView.setImageBitmap(bitmap);
-                } else {
-//                    Drawable placeholder = imageView.getContext().getResources().getDrawable();
-//                    imageView.setImageDrawable(placeholder);
-                }
+        if(mListener != null) {
+            if(bitmap != null) {
+               mListener.onLoadImageSuccess(mKey,bitmap);
+            } else {
+                mListener.onLoadImageError();
             }
         }
     }
 
     public Bitmap decodeBitmap(Integer url, int maxWidth){
 
+        // 從 Drawable 拿 就好 不用在轉 Bitmap
         Bitmap bitmap = null;
         try{
             BitmapFactory.Options options = new BitmapFactory.Options();
@@ -78,7 +80,7 @@ public class LoadImage extends AsyncTask<Integer, Void, Bitmap> {
             BitmapDrawable bitmapDrawable = ((BitmapDrawable) drawable);
             Bitmap b = bitmapDrawable.getBitmap();
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            b.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+            b.compress(Bitmap.CompressFormat.JPEG, 60, stream);
             //use the compression format of your need
             InputStream is = new ByteArrayInputStream(stream.toByteArray());
 
