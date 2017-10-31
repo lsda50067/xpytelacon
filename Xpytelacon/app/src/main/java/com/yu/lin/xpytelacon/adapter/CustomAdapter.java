@@ -60,7 +60,7 @@ public class CustomAdapter extends BaseAdapter implements LoadImage.OnLoadImageL
         // init LruCache
         initLruCache();
         // create Handle;
-        initHandle();
+//        initHandle();
     }
 
     @Override
@@ -156,11 +156,11 @@ public class CustomAdapter extends BaseAdapter implements LoadImage.OnLoadImageL
     }
 
     // create Handle;
-    private void initHandle() {
-        mHandlerThread = new HandlerThread("LRU Cache Handler");
-        mHandlerThread.start();
-        mHandler = new Handler(mHandlerThread.getLooper());
-    }
+//    private void initHandle() {
+//        mHandlerThread = new HandlerThread("LRU Cache Handler");
+//        mHandlerThread.start();
+//        mHandler = new Handler(mHandlerThread.getLooper());
+//    }
 
     // init LruCache
     private void initLruCache() {
@@ -173,7 +173,8 @@ public class CustomAdapter extends BaseAdapter implements LoadImage.OnLoadImageL
         mLruCache = new LruCache<String, Bitmap>(cacheSize){
             @Override
             protected int sizeOf(String key, Bitmap value) {
-                return value.getByteCount() / 1024;
+                return value.getRowBytes() * value.getHeight() / 1024;
+//                        .getByteCount() / 1024;
             }
         };
     }
